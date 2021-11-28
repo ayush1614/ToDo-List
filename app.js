@@ -1,38 +1,38 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
-const date = require(__dirname + "/date.js") ;
+const date = require(__dirname + "/date.js");
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static("public")) ;
-app.set("view engine", "ejs");          // for using template hmhe yh karna hota hai
+app.use(express.static("public"));
+app.set("view engine", "ejs");          // for using template we have to do this 
 
 let items = [];
-let workItems = [] ;
+let workItems = [];
 app.get("/", function (request, response) {
-    
-    let day =   date.getDate();                                                   // name should be same of both variables 
+
+    let day = date.getDate();                                                 // name should be same of both variables 
     response.render("list", { listTitle: day, newListItems: items });        // passing the variable to our template to update
 });
 
-app.get("/work",function(request,response){
-    response.render("list" , {listTitle: "WorkList", newListItems: workItems}) ;
+app.get("/work", function (request, response) {
+    response.render("list", { listTitle: "WorkList", newListItems: workItems });
 })
 
 app.post("/", function (request, response) {
-    let item  = request.body.task ; 
-    
-    if(request.body.list ==='WorkList')
-    {
-        workItems.push(item) ; 
-        response.redirect("/work") ; 
+    let item = request.body.task;
+
+
+    if (request.body.list === 'WorkList') {
+        workItems.push(item);
+        response.redirect("/work");
     }
-    else
-    {
+    else {
         items.push(request.body.task);
         response.redirect("/");
     }
+
 
     // response.render("list" , {newListItem : item}) ;  // this gives error describes below arises due  to above render
 });
