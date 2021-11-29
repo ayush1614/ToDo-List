@@ -8,6 +8,6 @@ function getDate() {
         month: "long",
         day: "numeric"
     }
-    let day = today.toLocaleDateString("en-US", options);       //gives date in the given format 
+    let day = today.toLocaleDateString("en-US", options);       //give date in the given format 
     return day;
 }
