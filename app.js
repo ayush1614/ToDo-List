@@ -1,19 +1,39 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
-const date = require(__dirname + "/date.js");
+const mongoose  =require('mongoose') ; 
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");          // for using template we have to do this 
 
+mongoose.connect("mongodb://localhost:27017/todolistDB" , {useNewUrlparser  :true}) ; 
+const itemSchema = {
+    name:String
+} ;
+
+const Item = mongoose.model('Item' , itemSchema) ; 
+ 
 let items = [];
 let workItems = [];
+
 app.get("/", function (request, response) {
 
-    let day = date.getDate();                                                 // name should be same of both variables 
-    response.render("list", { listTitle: day, newListItems: items });        // passing the variable to our template to update
+    Item.find({},function(err,founditems){
+
+        if(founditems.length ===  0)
+        {
+            Item.insertMany(items , function(err){
+                if(err)
+                console.log(err) ;
+            
+                else
+                console.log("Suceesfully inserted ")  ;
+            }) ; 
+        }
+        response.render("list", { listTitle: 'Today', newListItems: founditems });        // passing the variable to our template to update
+    }) ;
 });
 
 app.get("/work", function (request, response) {
@@ -21,27 +41,31 @@ app.get("/work", function (request, response) {
 })
 
 app.post("/", function (request, response) {
-    let item = request.body.task;
+    let itemName = request.body.task;
 
-
-    if (request.body.list === 'WorkList') {
-        workItems.push(item);
-        response.redirect("/work");
-    }
-    else {
-        items.push(request.body.task);
-        response.redirect("/");
-    }
-
+    const item = new Item({
+        name: itemName 
+    });
+    item.save() ; 
+    response.redirect("/") ; 
 
     // response.render("list" , {newListItem : item}) ;  // this gives error describes below arises due  to above render
 });
 
+app.post("/delete" , function(request , response){
+    const checkedItemId  =  request.body.checkbox  ; 
+
+    Item.findByIdAndRemove(checkedItemId ,function(err){
+        if(!err){
+            console.log("Successfully deleted checked item .")
+            response.redirect("/") ; 
+        }
+    })
+}) ; 
 
 app.listen(process.env.PORT ||3000 , function (request, response) {
     console.log("Server started at port 3000");
 });
-
 
 
 // response.render("list" , {kindOfday: day}) ;
