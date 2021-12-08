@@ -13,10 +13,28 @@ const itemSchema = {
     name:String
 } ;
 
-const Item = mongoose.model('Item' , itemSchema) ; 
- 
+const listSchema = {
+    name:String , 
+    items  : [itemSchema]
+} ; 
+
+
+const Item = mongoose.model('Item' , itemSchema) ;      //creating item model
+const List = mongoose.model('List', listSchema) ;       // creating list model
+
+const item1 = new Item({
+    name: 'Ayush'
+})
+const item2 = new Item({
+    name: 'Ram'
+})
+const item3 = new Item({
+    name: 'Siya'
+})
+
 let items = [];
 let workItems = [];
+let defaultItems = [item1 ,item2 , item3] ; 
 
 app.get("/", function (request, response) {
 
@@ -24,7 +42,7 @@ app.get("/", function (request, response) {
 
         if(founditems.length ===  0)
         {
-            Item.insertMany(items , function(err){
+            Item.insertMany(defaultItems , function(err){
                 if(err)
                 console.log(err) ;
             
@@ -36,26 +54,61 @@ app.get("/", function (request, response) {
     }) ;
 });
 
+app.get("/:customListName", function(req,res){
+    const customListName = req.params.customListName;
+
+    List.findOne({name :customListName} , function(err,foundLists){
+        if(!err)
+        {
+            if(!foundLists)
+            {
+                // creates lists 
+                const list = new List({
+                    name: customListName , 
+                    items: defaultItems
+                }) ;
+                list.save() ; 
+                res.redirect("/"+customListName) ; 
+            }
+            else
+            res.render("list", { listTitle: foundLists.name, newListItems: foundLists.items});
+        }
+    })
+}) ;
+
 app.get("/work", function (request, response) {
     response.render("list", { listTitle: "WorkList", newListItems: workItems });
 })
 
 app.post("/", function (request, response) {
     let itemName = request.body.task;
+    const listName  =  request.body.list; 
 
     const item = new Item({
         name: itemName 
     });
-    item.save() ; 
-    response.redirect("/") ; 
 
+    if(listName === 'Today')
+    {
+        item.save() ; 
+        response.redirect("/") ; 
+    }
+    else{
+        List.findOne({name: listName},function(err,foundLists){
+            foundLists.items.push(item) ;
+            foundLists.save();
+            response.redirect("/" + listName) ;
+        })
+    }
     // response.render("list" , {newListItem : item}) ;  // this gives error describes below arises due  to above render
 });
 
+
+//delete the item in the lists
 app.post("/delete" , function(request , response){
     const checkedItemId  =  request.body.checkbox  ; 
 
-    Item.findByIdAndRemove(checkedItemId ,function(err){
+    Item.findByIdAndRemove(checkedItemId ,function(err){            // callback is required fro removing here 
         if(!err){
             console.log("Successfully deleted checked item .")
             response.redirect("/") ; 
@@ -63,7 +116,7 @@ app.post("/delete" , function(request , response){
     })
 }) ; 
 
-app.listen(process.env.PORT ||3000 , function (request, response) {
+app.listen(process.env.PORT || 3000 , function (request, response) {
     console.log("Server started at port 3000");
 });
 
