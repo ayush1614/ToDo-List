@@ -9,7 +9,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");          // for using template we have to do this 
 
-mongoose.connect("mongodb+srv://admin-ayush:kevinAyush1614@cluster0.ztydm.mongodb.net/todolistDB", { useNewUrlparser: true });
+mongoose.connect("mongodb+srv://<username>:<PassWord>@cluster0.ztydm.mongodb.net/todolistDB", { useNewUrlparser: true });
 const itemSchema = {
     name: String
 };
