@@ -1,80 +1,67 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
-const mongoose  =require('mongoose') ; 
+const mongoose = require('mongoose');
+const lodash = require('lodash') ;
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.set("view engine", "ejs");          // for using template we have to do this 
 
-mongoose.connect("mongodb://localhost:27017/todolistDB" , {useNewUrlparser  :true}) ; 
+mongoose.connect("mongodb+srv://admin-ayush:kevinAyush1614@cluster0.ztydm.mongodb.net/todolistDB", { useNewUrlparser: true });
 const itemSchema = {
-    name:String
-} ;
+    name: String
+};
 
 const listSchema = {
-    name:String , 
-    items  : [itemSchema]
-} ; 
+    name: String,
+    items: [itemSchema]
+};
 
 
-const Item = mongoose.model('Item' , itemSchema) ;      //creating item model
-const List = mongoose.model('List', listSchema) ;       // creating list model
-
-const item1 = new Item({
-    name: 'Ayush'
-})
-const item2 = new Item({
-    name: 'Ram'
-})
-const item3 = new Item({
-    name: 'Siya'
-})
+const Item = mongoose.model('Item', itemSchema);      //creating item model
+const List = mongoose.model('List', listSchema);       // creating list model
 
 let items = [];
 let workItems = [];
-let defaultItems = [item1 ,item2 , item3] ; 
 
 app.get("/", function (request, response) {
 
-    Item.find({},function(err,founditems){
+    Item.find({}, function (err, founditems) {
 
-        if(founditems.length ===  0)
-        {
-            Item.insertMany(defaultItems , function(err){
-                if(err)
-                console.log(err) ;
-            
+        if (founditems.length === 0) {
+            Item.insertMany(items, function (err) {
+                if (err)
+                    console.log(err);
+
                 else
-                console.log("Suceesfully inserted ")  ;
-            }) ; 
+                    console.log("Suceesfully inserted ");
+            });
         }
         response.render("list", { listTitle: 'Today', newListItems: founditems });        // passing the variable to our template to update
-    }) ;
+    });
 });
 
-app.get("/:customListName", function(req,res){
-    const customListName = req.params.customListName;
+app.get("/:customListName", function (req, res) {
+    const customListName = lodash.capitalize(req.params.customListName);
 
-    List.findOne({name :customListName} , function(err,foundLists){
-        if(!err)
-        {
-            if(!foundLists)
-            {
+    List.findOne({ name: customListName }, function (err, foundLists) {
+        if (!err) {
+            if (!foundLists) {
                 // creates lists 
                 const list = new List({
-                    name: customListName , 
-                    items: defaultItems
-                }) ;
-                list.save() ; 
-                res.redirect("/"+customListName) ; 
+                    name: customListName,
+                    items: items
+                });
+                list.save();
+                res.redirect("/" + customListName);
             }
             else
-            res.render("list", { listTitle: foundLists.name, newListItems: foundLists.items});
+                res.render("list", { listTitle: foundLists.name, newListItems: foundLists.items });
         }
     })
-}) ;
+});
 
 app.get("/work", function (request, response) {
     response.render("list", { listTitle: "WorkList", newListItems: workItems });
@@ -82,22 +69,21 @@ app.get("/work", function (request, response) {
 
 app.post("/", function (request, response) {
     let itemName = request.body.task;
-    const listName  =  request.body.list; 
+    const listName = request.body.list;
 
     const item = new Item({
-        name: itemName 
+        name: itemName
     });
 
-    if(listName === 'Today')
-    {
-        item.save() ; 
-        response.redirect("/") ; 
+    if (listName === 'Today') {
+        item.save();
+        response.redirect("/");
     }
-    else{
-        List.findOne({name: listName},function(err,foundLists){
-            foundLists.items.push(item) ;
+    else {
+        List.findOne({ name: listName }, function (err, foundLists) {
+            foundLists.items.push(item);
             foundLists.save();
-            response.redirect("/" + listName) ;
+            response.redirect("/" + listName);
         })
     }
     // response.render("list" , {newListItem : item}) ;  // this gives error describes below arises due  to above render
@@ -105,18 +91,27 @@ app.post("/", function (request, response) {
 
 
 //delete the item in the lists
-app.post("/delete" , function(request , response){
-    const checkedItemId  =  request.body.checkbox  ; 
+app.post("/delete", function (request, response) {
+    const checkedItemId = request.body.checkbox;
+    const listName = request.body.listName;
+    if (listName === 'Today') {
+        Item.findByIdAndRemove(checkedItemId, function (err) {            // callback is required fro removing here 
+            if (!err) {
+                console.log("Successfully deleted checked item .")
+                response.redirect("/");
+            }
+        });
+    }
+    else {
+        List.findOneAndUpdate({ name: listName }, { $pull: { items: { _id: checkedItemId } } }, function(err,foundLists){
+            if(!err){
+                response.redirect ( "/"+listName) ; 
+            }
+        })
+    }
+});
 
-    Item.findByIdAndRemove(checkedItemId ,function(err){            // callback is required fro removing here 
-        if(!err){
-            console.log("Successfully deleted checked item .")
-            response.redirect("/") ; 
-        }
-    })
-}) ; 
-
-app.listen(process.env.PORT || 3000 , function (request, response) {
+app.listen(process.env.PORT || 3000, function (request, response) {
     console.log("Server started at port 3000");
 });
 

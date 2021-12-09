@@ -9,15 +9,18 @@
     <div class="box">
 
         <%newListItems.forEach(function(item){%>
-            <form action="/delete" method="post">        <%# resposible for deleting the checked items %> 
+            <%# resposible for deleting the checked items %> 
+            <form action="/delete" method="post">        
                 <div class="item">
                     <input type="checkbox" name="checkbox" value="<%=item._id%>" onchange="this.form.submit()">
                     <p><%=item.name%></p>
                 </div>
+                <input type="hidden" name="listName" value=<%=listTitle%>>
             </form>
         <%})%>
 
-        <form class="item" action="/" method="post">       <%# responsible for adding the items in list  %> 
+        <%# responsible for adding the items in list  %> 
+        <form class="item" action="/" method="post">       
             <input type="text" name="task" id="task" placeholder="New item" autocomplete="off" required>
             <button type="submit" name="list" value=<%=listTitle %> >+ </button>
         </form>
